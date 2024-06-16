@@ -1,0 +1,1 @@
+gcc main.c -o main img/demo64.o -ISDL64/include -LSDL64/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -mwindows
