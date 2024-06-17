@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <math.h>
 #include "SDL/include/SDL2/SDL.h"
 #include "SDL/include/SDL2/SDL_image.h"
 #include "SDL/include/SDL2/SDL_ttf.h"
@@ -10,9 +11,10 @@
 
 // 函数声明，函数作用，参数说明等在函数定义处注释写出
 void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *font, int gameover, int score);
-void add_block(int all[4][4]);
-int moveup(int all[4][4], int move[4][4]);
+void add_block(int all[4][4], unsigned short pos[2]);
+int moveup(int all[4][4], int move[4][4], int used[4][4]);
 void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font);
+void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score);
 void transposition(int all[4][4], char direction);
 int save_score(int score);
 SDL_Color getcolor(int number);
@@ -22,11 +24,14 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                    PSTR lpCmdLine, INT nCmdShow)
 {
 
-    int all[4][4] = {0};
+    int all[4][4] = {0};      // 地图
+    int all_temp[4][4] = {0}; // 地图缓存
     int i, j;
+    unsigned short appear_pos1[2] = {0};
+    unsigned short appear_pos2[2] = {0};
 
     int ret = SDL_Init(SDL_INIT_EVERYTHING);
-    if (ret != 0)   //如果初始化失败，返回错误代码，以下类似
+    if (ret != 0) // 如果初始化失败，返回错误代码，以下类似
     {
         return -1;
     }
@@ -103,8 +108,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     SDL_RenderPresent(pRenderer);
 
     // 初始化地图
-    add_block(all);
-    add_block(all);
+    add_block(all, appear_pos1);
+    add_block(all, appear_pos2);
 
     // 绘图
     draw(pRenderer, all, tex, font, 0, 0);
@@ -134,8 +139,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     score = 0;
                     gameover = 0;
                     // 初始化地图
-                    add_block(all);
-                    add_block(all);
+                    add_block(all, appear_pos1);
+                    add_block(all, appear_pos2);
                     // 绘图
                     draw(pRenderer, all, tex, font, 0, 0);
                     delay_or_not = 1;
@@ -159,12 +164,14 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 }
                 int move[4][4] = {0}; // 记录每个格子需要移动的格数，因为动画要使用移动距离，所以先记录移动矩阵，再移动地图
                 int score_add;        // 记录单步分数
+                int used[4][4] = {0}; // 记录每个格子是否被使用，是否产生合并，用于动画
 
                 transposition(all, evt.key.keysym.sym);  // 游戏中实际上仅有一个向上的游戏操作，其他操作都由矩阵转置实现，即将矩阵转置后，统一向上移动，再转置回来
-                score_add = moveup(all, move);           // 向上移动，返回单步分数
+                score_add = moveup(all, move, used);     // 向上移动，返回单步分数
                 score += score_add;                      // 加分
                 transposition(all, evt.key.keysym.sym);  // 转置回来地图
                 transposition(move, evt.key.keysym.sym); // 转置回来移动矩阵，这一步的目的是以正向的方向播放动画
+                transposition(used, evt.key.keysym.sym); // 转置使用矩阵
                 // 如果没有移动，不生成新的方块，不进行动画
                 int move_flag = 0;
                 for (i = 0; i < 4; i++) // 遍历移动矩阵，判断是否有移动
@@ -184,16 +191,27 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         // 有合成，播放音频
                         Mix_PlayMusic(add_wav, 0);
                     }
+
                     animation(move, all, pRenderer, tex, evt.key.keysym.sym, font); // 动画
                 }
 
                 transposition(all, evt.key.keysym.sym);  // 重新转置地图，准备计算新的地图
                 transposition(move, evt.key.keysym.sym); // 重新转置移动矩阵，准备计算新的地图
 
+                // 缓存地图
+                for (i = 0; i < 4; i++)
+                {
+                    for (j = 0; j < 4; j++)
+                    {
+                        all_temp[i][j] = all[i][j];
+                    }
+                }
+
                 for (i = 0; i < 4; i++) // 移动地图，根据移动矩阵，将每个格子移动到对应位置，移动到相同格子的数字相加
                 {
                     for (j = 0; j < 4; j++)
                     {
+
                         if (move[i][j] != 0)
                         {
                             all[i][j - move[i][j]] += all[i][j];
@@ -221,7 +239,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 {
                     if (move_flag != 0) // 再次使用move——flag，判断没有移动，不生成新的方块
                     {
-                        add_block(all);
+                        add_block(all, appear_pos1);
+                        appear_pos2[0] = 5; // 标记为5，表示不用
                     }
                 }
                 else
@@ -252,8 +271,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
                     if (end == 1)
                     {
-                        printf("game over"); // 游戏结束,
-                        gameover = 1;        // 设置游戏结束标志
+                        gameover = 1; // 设置游戏结束标志
 
                         if (delay_or_not) // 延迟标志，用于延迟游戏结束时的动画，优化体验
                         {
@@ -273,7 +291,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     {
                         if (all[i][j] == 2048)
                         {
-                            printf("you win");
                             gameover = 2;
                             Mix_PlayMusic(win_wav, 0);                        // 播放游戏胜利音频
                             draw(pRenderer, all, tex, font, gameover, score); // 绘图，以游戏胜利形式绘图
@@ -282,9 +299,16 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     }
                 }
 
+                if (score_add)
+                { // 有合成,播放合成动画
+                    used[appear_pos1[0]][appear_pos1[1]] = 3;
+                    if (appear_pos2[0] <= 4)
+                    {
+                        used[appear_pos2[0]][appear_pos2[1]] = 3;
+                    }
+                    bubble_animation(pRenderer, used, move, all_temp, all, tex, font, score); // 膨胀动画
+                }
                 draw(pRenderer, all, tex, font, gameover, score); // 绘图，正常绘图
-
-                printf("%c", evt.key.keysym.sym);
             }
         }
     }
@@ -312,7 +336,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         SDL_FreeSurface(bmp); // 释放表面
     }
 
-
     SDL_Quit(); // 退出SDL
     if (font != NULL)
     {
@@ -339,7 +362,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 // 返回值：颜色结构体
 SDL_Color getcolor(int number)
 {
-    //使用结构体数组储存颜色
+    // 使用结构体数组储存颜色
 
     SDL_Color colors[8] = {{238, 228, 218, 255}, {237, 224, 200, 255}, {242, 177, 121, 255}, {245, 149, 99, 255}, {246, 124, 95, 255}, {246, 94, 59, 255}, {237, 207, 114, 255}, {237, 204, 97, 255}};
     switch (number)
@@ -565,15 +588,21 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
 // 函数作用：向上移动，并没有实际移动，只是记录每个格子需要移动的格数，用于动画后再计算新地图
 // 参数：all：地图，move：移动矩阵
 // 返回值：单步分数
-int moveup(int all[4][4], int move[4][4])
+int moveup(int all[4][4], int move[4][4], int used[4][4])
 {
     int score = 0;
     int i, j;
     int m, n;
 
     // 记录每个格子需要移动的格数
-    // 初始化为0
-    int used[4][4] = {0};
+    // 移动矩阵初始化为0
+    for (i = 0; i < 4; i++)
+    {
+        for (j = 0; j < 4; j++)
+        {
+            used[i][j] = 0;
+        }
+    }
     for (i = 0; i < 4; i++) // 遍历地图
     {
         for (j = 0; j < 4; j++)
@@ -586,19 +615,19 @@ int moveup(int all[4][4], int move[4][4])
                 }
                 else
                 {
-                    n = 0;
+                    n = 0;                       // 位移
                     for (m = j - 1; m >= 0; m--) // 从当前格子向上遍历，直到遇到非空格子
                     {
 
                         if (all[i][m] != 0) // 非空格
                         {
-                            if (all[i][m] != all[i][j] || used[i][m] != 0)  // 不相等或已经被使用，不可再移动，当前方块可移动位数为目前可移动位数加碰到的方块的可移动位数
+                            if (all[i][m] != all[i][j] || used[i][m] != 0) // 不相等或已经被使用，不可再移动，当前方块可移动位数为目前可移动位数加碰到的方块的可移动位数
                             {
                                 n += move[i][m];
                                 break;
                             }
 
-                            if (all[i][m] == all[i][j] && used[i][m] == 0)  // 相等且未被使用，可移动，当前方块可移动位数为目前可移动位数加碰到的方块的可移动位数再加上合并的一位，并记录碰到的方块被使用，当前方块被使用
+                            if (all[i][m] == all[i][j] && used[i][m] == 0) // 相等且未被使用，可移动，当前方块可移动位数为目前可移动位数加碰到的方块的可移动位数再加上合并的一位，并记录碰到的方块被使用，当前方块被使用
 
                             {
                                 // 加分
@@ -607,7 +636,7 @@ int moveup(int all[4][4], int move[4][4])
                                 used[i][m] = 1; // 碰到的方块被使用
                                 used[i][j] = 2; // 当前方块被使用，1表示被合并，2表示被移动，其实都一样
                                 n++;
-                                n += move[i][m];
+                                n += move[i][m]; // 碰到的方块的位移，后面的方块要跟随移动
                                 break;
                             }
                         }
@@ -622,26 +651,38 @@ int moveup(int all[4][4], int move[4][4])
             }
         }
     }
+    // 合并移动和使用矩阵,将使用矩阵跟随移动矩阵移动
+    for (i = 0; i < 4; i++)
+    {
+        for (j = 0; j < 4; j++)
+        {
+            if (move[i][j] != 0)
+            {
+                if (used[i][j] != 2)
+                { // 排除2（被合并方块），否则一定会覆盖合并方块的1
+                    used[i][j - move[i][j]] = used[i][j];
+                    used[i][j] = 0;
+                }
+            }
+        }
+    }
     return score;
 }
 
 // 函数作用：生成新的方块
 // 参数：all：地图，times：生成方块的个数
 // 返回值：无
-void add_block(int all[4][4])
+void add_block(int all[4][4], unsigned short pos[2])
 {
     // 随机生成一个2或4
-
     int num;
-
     int x, y;
-
     x = rand() % 4;
     y = rand() % 4;
     num = rand() % 4;
     if (all[x][y] != 0) // 如果随机到的位置已经有数字了，重新随机
     {
-        return add_block(all);
+        return add_block(all, pos);
     }
     if (num == 1) // 1/4的概率生成4
     {
@@ -651,7 +692,8 @@ void add_block(int all[4][4])
     {
         all[x][y] = 2;
     }
-
+    pos[0] = x;
+    pos[1] = y;
 }
 
 // 函数作用：动画，移动时划过
@@ -659,14 +701,12 @@ void add_block(int all[4][4])
 // 返回值：无
 void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font)
 {
-    int move_times = 10; // 每一步，每个滑行时渲染的帧数
+    int move_times = 15; // 每一步，每个滑行时渲染的帧数
     int delay_time = 5;  // 每帧之间的延迟，可以控制动画速度
     // 动画效果,move为移动的格数，移动时划过
     SDL_Texture *texture = NULL;
     SDL_Surface *surface = NULL;
-
     // 位置信息：y加118.5 x加121
-
     SDL_Rect pos = {0, 0, 600, 800};
     SDL_Color color;
     SDL_Rect rect;
@@ -693,21 +733,21 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
                     if (direction == 'w') // 根据移动方向，计算位置
                     {
                         rect.x = 60 + 121 * i;
-                        rect.y = 184 + 118.5 * j - (118.6 * (move[i][j])) / move_times * hz; // 计算位置
+                        rect.y = 184 + 118.5 * j - (118.6 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2); // 计算位置
                     }
                     else if (direction == 's')
                     {
                         rect.x = 60 + 121 * i;
-                        rect.y = 184 + 118.5 * j + (118.6 * (move[i][j])) / move_times * hz;
+                        rect.y = 184 + 118.5 * j + (118.6 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2);
                     }
                     else if (direction == 'a')
                     {
-                        rect.x = 60 + 121 * i - (121 * (move[i][j])) / move_times * hz;
+                        rect.x = 60 + 121 * i - (121 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2);
                         rect.y = 184 + 118.5 * j;
                     }
                     else if (direction == 'd')
                     {
-                        rect.x = 60 + 121 * i + (121 * (move[i][j])) / move_times * hz;
+                        rect.x = 60 + 121 * i + (121 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2);
                         rect.y = 184 + 118.5 * j;
                     }
                     rect.w = 106.66;
@@ -762,6 +802,223 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
     }
 }
 
+// 函数作用：膨胀和出现动画
+// 参数：pRenderer：渲染器，used：使用矩阵，move：移动矩阵，all_temp：缓存地图，all：地图，tex：背景，font：字体，score：分数
+// 返回值：无
+void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score)
+{
+    // 气泡动画
+    //  读取最高分
+    unsigned int hz = 0;
+    SDL_Texture *texture = NULL; // 纹理（用于渲染文本）
+    SDL_Surface *surface = NULL; // 表面（用于渲染文本）
+    int i, j;
+    SDL_Rect pos = {0, 0, 600, 800}; // 背景位置
+    SDL_Color color;                 // 颜色
+    SDL_Rect rect;                   // 方块位置
+    SDL_Rect block_rect;
+    SDL_Rect font_rect;                          // 文本位置
+    SDL_Color font_color = {119, 110, 101, 255}; // 默认文本颜色，棕色
+    SDL_RenderClear(pRenderer);                  // 清空渲染器
+    SDL_RenderCopy(pRenderer, tex, NULL, &pos);  // 先绘制背景，再在背景上绘制方块和文本
+
+    int amplitude = 15; // 膨胀动画幅度
+    int times = 15;     // 膨胀动画步数
+    int delay_time = 4; // 每帧之间的延迟
+
+    char number[6];
+
+    // 计算合并矩阵
+    int count[4][4] = {0}; // 对每格存在的方块计数，如果有两个方块，则产生合并
+    for (i = 0; i < 4; i++)
+    {
+        for (j = 0; j < 4; j++)
+        {
+            if (all_temp[i][j] != 0)
+            {
+                count[i][j]++;
+            }
+
+            if (move[i][j] != 0)
+            {
+                count[i][j]--;
+            }
+        }
+    }
+
+    for (hz = 0; hz < times; hz++)
+    {
+        SDL_RenderCopy(pRenderer, tex, NULL, &pos); // 先绘制背景，再在背景上绘制方块和文本
+        for (i = 0; i < 4; i++)                     // 遍历地图，绘制方块和文本
+        {
+            for (j = 0; j < 4; j++)
+            {
+
+                if (all[i][j] != 0 && used[i][j] != 1 && used[i][j] != 3) // 数字不为0，绘制方块和文本
+                {
+                    color = getcolor(all[i][j]); // 获取颜色
+                    rect.x = 60 + 121 * i;       // 计算方块位置
+                    rect.y = 184 + 118.5 * j;
+                    rect.w = 106.66;
+                    rect.h = 105.33;
+                    SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
+                    SDL_RenderFillRect(pRenderer, &rect);                                  // 绘制方块
+
+                    // 渲染文本，数字大于8时，颜色变成白色
+                    if (all[i][j] >= 8)
+                    {
+                        font_color.r = 255;
+                        font_color.g = 255;
+                        font_color.b = 255; // 白色的rgb
+                    }
+                    else
+                    {
+                        font_color.r = 119;
+                        font_color.g = 110;
+                        font_color.b = 101; // 棕色的rgb
+                    }
+                    surface = TTF_RenderText_Blended(font, itoa(all[i][j], number, 10), font_color); // 创建字体表面
+                    texture = SDL_CreateTextureFromSurface(pRenderer, surface);                      // 创建字体纹理
+
+                    // 调整字体位置和大小
+                    font_rect = rect; // 先定位到方块位置，再调整
+                    font_rect.x += 30;
+                    font_rect.y += 25;
+                    font_rect.w = 40;
+                    font_rect.h = 60;
+                    if (all[i][j] > 10) // 根据数字位数微调
+                    {
+                        font_rect.x -= 10;
+                        font_rect.w += 20;
+                    }
+                    if (all[i][j] > 100)
+                    {
+                        font_rect.x -= 9;
+                        font_rect.w += 20;
+                    }
+                    SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
+                }
+
+                if (used[i][j] == 1) // 此处产生了合并
+                {
+                    float offset = amplitude * sin(hz * 3.14159 / times); // 计算偏移量
+                    color = getcolor(all[i][j]);                          // 获取颜色
+
+                    rect.x = 60 + 121 * i; // 计算方块位置
+                    rect.y = 184 + 118.5 * j;
+                    rect.w = 106.66;
+                    rect.h = 105.33;
+
+                    SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
+                    block_rect = rect;
+                    block_rect.x -= offset;
+                    block_rect.y -= offset;
+                    block_rect.w += 2 * offset;
+                    block_rect.h += 2 * offset;
+
+                    SDL_RenderFillRect(pRenderer, &block_rect); // 绘制方块
+
+                    // 渲染文本，数字大于8时，颜色变成白色
+                    if (all[i][j] >= 8)
+                    {
+                        font_color.r = 255;
+                        font_color.g = 255;
+                        font_color.b = 255; // 白色的rgb
+                    }
+                    else
+                    {
+                        font_color.r = 119;
+                        font_color.g = 110;
+                        font_color.b = 101; // 棕色的rgb
+                    }
+                    surface = TTF_RenderText_Blended(font, itoa(all[i][j], number, 10), font_color); // 创建字体表面
+                    texture = SDL_CreateTextureFromSurface(pRenderer, surface);                      // 创建字体纹理
+
+                    // 调整字体位置和大小
+                    font_rect = rect; // 先定位到方块位置，再调整
+                    font_rect.x += 30;
+                    font_rect.y += 25;
+                    font_rect.w = 40;
+                    font_rect.h = 60;
+                    if (all[i][j] > 10) // 根据数字位数微调
+                    {
+                        font_rect.x -= 10;
+                        font_rect.w += 20;
+                    }
+                    if (all[i][j] > 100)
+                    {
+                        font_rect.x -= 9;
+                        font_rect.w += 20;
+                    }
+                    SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
+                }
+
+                if (used[i][j] == 3) // 此处出现方块
+                {
+                    float offset = 106.66 / 2 * (((float)times - (float)hz) / (float)times); // 计算偏移量
+                    color = getcolor(all[i][j]);                                             // 获取颜色
+
+                    rect.x = 60 + 121 * i; // 计算方块位置
+                    rect.y = 184 + 118.5 * j;
+                    rect.w = 106.66;
+                    rect.h = 105.33;
+
+                    SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
+                    block_rect = rect;
+                    block_rect.x += offset;
+                    block_rect.y += offset;
+                    block_rect.w -= 2 * offset;
+                    block_rect.h -= 2 * offset;
+
+                    SDL_RenderFillRect(pRenderer, &block_rect); // 绘制方块
+
+                    // 渲染文本，数字大于8时，颜色变成白色
+                    if (all[i][j] >= 8)
+                    {
+                        font_color.r = 255;
+                        font_color.g = 255;
+                        font_color.b = 255; // 白色的rgb
+                    }
+                    else
+                    {
+                        font_color.r = 119;
+                        font_color.g = 110;
+                        font_color.b = 101; // 棕色的rgb
+                    }
+                    surface = TTF_RenderText_Blended(font, itoa(all[i][j], number, 10), font_color); // 创建字体表面
+                    texture = SDL_CreateTextureFromSurface(pRenderer, surface);                      // 创建字体纹理
+
+                    // 调整字体位置和大小
+                    font_rect = rect; // 先定位到方块位置，再调整
+                    font_rect.x += 30;
+                    font_rect.y += 25;
+                    font_rect.w = 40;
+                    font_rect.h = 60;
+                    if (all[i][j] > 10) // 根据数字位数微调
+                    {
+                        font_rect.x -= 10;
+                        font_rect.w += 20;
+                    }
+                    if (all[i][j] > 100)
+                    {
+                        font_rect.x -= 9;
+                        font_rect.w += 20;
+                    }
+                    // 动画缩放
+
+                    font_rect.x += offset;
+                    font_rect.y += offset;
+                    font_rect.w -= 2 * offset;
+                    font_rect.h -= 2 * offset;
+
+                    SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
+                }
+            }
+        }
+        SDL_RenderPresent(pRenderer);
+        SDL_Delay(delay_time); // 每帧之间的延迟，可以控制动画速度
+    }
+}
 // 函数作用：矩阵转置
 // 参数：all：地图，direction：移动方向
 // 返回值：无
