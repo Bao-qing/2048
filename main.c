@@ -258,6 +258,9 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 {
                     appear_pos1[0] = 5;
                     appear_pos2[0] = 5;
+                }
+                if (empty <= 1)
+                {
                     // 判断是否游戏结束
                     int end = 1;
 
@@ -281,12 +284,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                             }
                         }
                     }
-
                     if (end == 1)
                     {
-                        gameover = 1; // 设置游戏结束标志
-
-                        if (delay_or_not) // 延迟标志，用于延迟游戏结束时的动画，优化体验
+                        draw(pRenderer, all, tex, font, gameover, score); // 先绘制正常界面，再延迟后绘制游戏结束界面
+                        gameover = 1;                                     // 设置游戏结束标志
+                        if (delay_or_not)                                 // 延迟标志，用于延迟游戏结束时的动画，优化体验
                         {
                             SDL_Delay(2000);
                             delay_or_not = 0; // 延迟过一次，不再延迟
@@ -311,7 +313,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         }
                     }
                 }
-
                 if (appear_pos2[0] <= 4)
                 {
                     used[appear_pos2[0]][appear_pos2[1]] = 3;
@@ -320,7 +321,6 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 {
                     used[appear_pos1[0]][appear_pos1[1]] = 3;
                 }
-
                 bubble_animation(pRenderer, used, move, all_temp, all, tex, font, score, max_score); // 膨胀动画
                 draw(pRenderer, all, tex, font, gameover, score);                                    // 绘图，正常绘图
             }
@@ -637,8 +637,8 @@ void add_block(int all[4][4], unsigned short pos[2])
 // 返回值：无
 void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font, int score, int max_score, int scoreadd)
 {
-    int move_times = 15; // 每一步，每个滑行时渲染的帧数
-    int delay_time = 5;  // 每帧之间的延迟，可以控制动画速度
+    int move_times = 8; // 每一步，每个滑行时渲染的帧数
+    int delay_time = 8; // 每帧之间的延迟，可以控制动画速度
     // 动画效果,move为移动的格数，移动时划过
     SDL_Texture *texture = NULL;
     SDL_Surface *surface = NULL;
@@ -992,6 +992,8 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                         font_rect.w += 20;
                     }
                     SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
+                    SDL_FreeSurface(surface);                             // 释放表面
+                    SDL_DestroyTexture(texture);                          // 释放纹理
                 }
 
                 if (used[i][j] == 1) // 此处产生了合并
