@@ -13,8 +13,9 @@
 void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *font, int gameover, int score);
 void add_block(int all[4][4], unsigned short pos[2]);
 int moveup(int all[4][4], int move[4][4], int used[4][4]);
-void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font);
+void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font,int score);
 void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score);
+void score_draw(SDL_Renderer *pRenderer,TTF_Font *font,int score);
 void transposition(int all[4][4], char direction);
 int save_score(int score);
 SDL_Color getcolor(int number);
@@ -192,7 +193,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         Mix_PlayMusic(add_wav, 0);
                     }
 
-                    animation(move, all, pRenderer, tex, evt.key.keysym.sym, font); // 动画
+                    animation(move, all, pRenderer, tex, evt.key.keysym.sym, font,score); // 动画
                 }
 
                 transposition(all, evt.key.keysym.sym);  // 重新转置地图，准备计算新的地图
@@ -455,86 +456,8 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
             }
         }
     }
-    // 渲染分数
-    // score = 204;
-    char score_str[10];                                                        // 分数字符串
-    int scorelen;                                                              // 分数位数
-    scorelen = strlen(itoa(score, score_str, 10));                             // 获取分数位数
-    itoa(score, score_str, 10);                                                // 将分数转换为字符串
-    SDL_Surface *surface_score = NULL;                                         // 分数表面
-    SDL_Texture *texture_score = NULL;                                         // 分数纹理
-    SDL_Color font_color_score = {255, 255, 255, 255};                         // 分数颜色，白色
-    surface_score = TTF_RenderText_Blended(font, score_str, font_color_score); // 创建分数表面
-    texture_score = SDL_CreateTextureFromSurface(pRenderer, surface_score);    // 创建分数纹理
-    if (scorelen == 1)                                                         // 根据数字位数微调
-    {
-        font_rect.x = 349 + 10 + 10;
-        font_rect.w = 20;
-    }
-    else if (scorelen == 2)
-    {
-        font_rect.x = 350 + 10;
-        font_rect.w = 40;
-    }
-    else if (scorelen == 3)
-    {
-        font_rect.x = 350 + 8;
-        font_rect.w = 50;
-    }
-    else
-    {
-        font_rect.x = 350 + 5;
-        font_rect.w = 50;
-    }
-
-    font_rect.y = 38;
-    font_rect.h = 33;
-    printf("--score: %s--\n", score_str);
-    SDL_RenderCopy(pRenderer, texture_score, NULL, &font_rect); // 绘制分数，将分数纹理写入渲染器
-
-    SDL_FreeSurface(surface_score);    // 释放分数表面
-    SDL_DestroyTexture(texture_score); // 释放分数纹理
-
-    // 渲染最高分                                                       // 渲染最高分，与渲染分数相同，不再注释
-    char max_score_str[10];
-    int max_scorelen;
-    max_scorelen = strlen(itoa(max_score, max_score_str, 10));
-
-    itoa(max_score, max_score_str, 10);
-
-    SDL_Surface *surface_max_score = NULL;
-    SDL_Texture *texture_max_score = NULL;
-    SDL_Color font_color_max_score = {255, 255, 255, 255};
-    surface_max_score = TTF_RenderText_Blended(font, max_score_str, font_color_max_score);
-    texture_max_score = SDL_CreateTextureFromSurface(pRenderer, surface_max_score);
-    if (max_scorelen == 1)
-    {
-        font_rect.x = 350 + 10 + 10 + 108;
-        font_rect.w = 20;
-    }
-    else if (max_scorelen == 2)
-    {
-        font_rect.x = 350 + 10 + 108;
-        font_rect.w = 40;
-    }
-    else if (max_scorelen == 3)
-    {
-        font_rect.x = 350 + 10 + 108;
-        font_rect.w = 50;
-    }
-    else
-    {
-        font_rect.x = 350 + 5 + 108;
-        font_rect.w = 50;
-    }
-
-    font_rect.y = 38;
-    font_rect.h = 33;
-    printf("--max_score: %s--\n", max_score_str);
-    SDL_RenderCopy(pRenderer, texture_max_score, NULL, &font_rect);
-
-    SDL_FreeSurface(surface_max_score);
-    SDL_DestroyTexture(texture_max_score);
+    // 绘制分数
+    score_draw(pRenderer, font, score);
 
     // gameover = 2; 如果win or lose 在绘制好游戏主界面后加上蒙版
     if (gameover) // 不同的gameover值，绘制不同的界面，gameover=0，正常绘制，不再添加其他界面，gameover=1，绘制游戏结束界面，gameover=2，绘制游戏胜利界面
@@ -699,7 +622,7 @@ void add_block(int all[4][4], unsigned short pos[2])
 // 函数作用：动画，移动时划过
 // 参数：move：移动矩阵，all：地图，pRenderer：渲染器，tex：背景，direction：移动方向，font：字体
 // 返回值：无
-void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font)
+void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font,int score)
 {
     int move_times = 15; // 每一步，每个滑行时渲染的帧数
     int delay_time = 5;  // 每帧之间的延迟，可以控制动画速度
@@ -797,9 +720,102 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
                 }
             }
         }
+        score_draw(pRenderer, font, score); // 绘制分数
         SDL_RenderPresent(pRenderer);
         SDL_Delay(delay_time); // 每帧之间的延迟，可以控制动画速度
     }
+}
+
+void score_draw(SDL_Renderer *pRenderer,TTF_Font *font,int score){
+    // 读取最高分
+    int max_score = save_score(score);
+    
+    unsigned int hz = 0;
+    SDL_Texture *texture = NULL; // 纹理（用于渲染文本）
+    SDL_Surface *surface = NULL; // 表面（用于渲染文本）
+    char number[6];
+    SDL_Rect font_rect;                          // 文本位置
+    SDL_Color font_color = {119, 110, 101, 255}; // 默认文本颜色，棕色
+
+    // 渲染分数
+    // score = 204;
+    char score_str[10];                                                        // 分数字符串
+    int scorelen;                                                              // 分数位数
+    scorelen = strlen(itoa(score, score_str, 10));                             // 获取分数位数
+    itoa(score, score_str, 10);                                                // 将分数转换为字符串
+    SDL_Surface *surface_score = NULL;                                         // 分数表面
+    SDL_Texture *texture_score = NULL;                                         // 分数纹理
+    SDL_Color font_color_score = {255, 255, 255, 255};                         // 分数颜色，白色
+    surface_score = TTF_RenderText_Blended(font, score_str, font_color_score); // 创建分数表面
+    texture_score = SDL_CreateTextureFromSurface(pRenderer, surface_score);    // 创建分数纹理
+    if (scorelen == 1)                                                         // 根据数字位数微调
+    {
+        font_rect.x = 349 + 10 + 8;
+        font_rect.w = 20;
+    }
+    else if (scorelen == 2)
+    {
+        font_rect.x = 350 + 10;
+        font_rect.w = 40;
+    }
+    else if (scorelen == 3)
+    {
+        font_rect.x = 350 + 8;
+        font_rect.w = 50;
+    }
+    else
+    {
+        font_rect.x = 350 + 5;
+        font_rect.w = 50;
+    }
+
+    font_rect.y = 38;
+    font_rect.h = 33;
+    printf("--score: %s--\n", score_str);
+    SDL_RenderCopy(pRenderer, texture_score, NULL, &font_rect); // 绘制分数，将分数纹理写入渲染器
+    // 渲染最高分                                                       // 渲染最高分，与渲染分数相同，不再注释
+    char max_score_str[10];
+    int max_scorelen;
+    max_scorelen = strlen(itoa(max_score, max_score_str, 10));
+
+    itoa(max_score, max_score_str, 10);
+
+    SDL_Surface *surface_max_score = NULL;
+    SDL_Texture *texture_max_score = NULL;
+    SDL_Color font_color_max_score = {255, 255, 255, 255};
+    surface_max_score = TTF_RenderText_Blended(font, max_score_str, font_color_max_score);
+    texture_max_score = SDL_CreateTextureFromSurface(pRenderer, surface_max_score);
+    if (max_scorelen == 1)
+    {
+        font_rect.x = 350 + 10 + 10 + 108;
+        font_rect.w = 20;
+    }
+    else if (max_scorelen == 2)
+    {
+        font_rect.x = 350 + 10 + 108;
+        font_rect.w = 40;
+    }
+    else if (max_scorelen == 3)
+    {
+        font_rect.x = 350 + 10 + 108;
+        font_rect.w = 50;
+    }
+    else
+    {
+        font_rect.x = 350 + 5 + 108;
+        font_rect.w = 50;
+    }
+
+    font_rect.y = 38;
+    font_rect.h = 33;
+    printf("--max_score: %s--\n", max_score_str);
+    SDL_RenderCopy(pRenderer, texture_max_score, NULL, &font_rect);
+    // 释放
+    SDL_FreeSurface(surface_score);
+    SDL_DestroyTexture(texture_score);
+    SDL_FreeSurface(surface_max_score);
+    SDL_DestroyTexture(texture_max_score);
+
 }
 
 // 函数作用：膨胀和出现动画
@@ -1015,6 +1031,7 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                 }
             }
         }
+        score_draw(pRenderer, font, score); // 绘制分数
         SDL_RenderPresent(pRenderer);
         SDL_Delay(delay_time); // 每帧之间的延迟，可以控制动画速度
     }
