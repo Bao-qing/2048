@@ -259,7 +259,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     appear_pos1[0] = 5;
                     appear_pos2[0] = 5;
                 }
-                if (empty <= 1)
+
+                if (empty == 0 || (empty==1 && appear_pos1[0]<=4))
                 {
                     // 判断是否游戏结束
                     int end = 1;
@@ -284,6 +285,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                             }
                         }
                     }
+                    
                     if (end == 1)
                     {
                         draw(pRenderer, all, tex, font, gameover, score); // 先绘制正常界面，再延迟后绘制游戏结束界面
@@ -451,10 +453,10 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
 
                 // 调整字体位置和大小
                 font_rect = rect; // 先定位到方块位置，再调整
-                font_rect.x += 30;
-                font_rect.y += 25;
-                font_rect.w = 40;
-                font_rect.h = 60;
+                font_rect.x += 32.5;
+                font_rect.y += 20;
+                font_rect.w = 35;
+                font_rect.h = 70;
                 if (all[i][j] > 10) // 根据数字位数微调
                 {
                     font_rect.x -= 10;
@@ -711,10 +713,10 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
 
                     // 调整字体位置和大小
                     font_rect = rect; // 先定位到目前方块位置，再调整
-                    font_rect.x += 30;
-                    font_rect.y += 25;
-                    font_rect.w = 40;
-                    font_rect.h = 60;
+                font_rect.x += 32.5;
+                font_rect.y += 20;
+                font_rect.w = 35;
+                font_rect.h = 70;
                     if (all[i][j] > 10)
                     {
                         font_rect.x -= 10;
@@ -918,6 +920,7 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
     SDL_RenderCopy(pRenderer, tex, NULL, &pos);  // 先绘制背景，再在背景上绘制方块和文本
 
     int amplitude = 15; // 膨胀动画幅度
+    int amplitude_font = 10;
     int times = 15;     // 膨胀动画步数
     int delay_time = 4; // 每帧之间的延迟
 
@@ -977,10 +980,10 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
 
                     // 调整字体位置和大小
                     font_rect = rect; // 先定位到方块位置，再调整
-                    font_rect.x += 30;
-                    font_rect.y += 25;
-                    font_rect.w = 40;
-                    font_rect.h = 60;
+                font_rect.x += 32.5;
+                font_rect.y += 20;
+                font_rect.w = 35;
+                font_rect.h = 70;
                     if (all[i][j] > 10) // 根据数字位数微调
                     {
                         font_rect.x -= 10;
@@ -1033,10 +1036,15 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
 
                     // 调整字体位置和大小
                     font_rect = rect; // 先定位到方块位置，再调整
-                    font_rect.x += 30;
-                    font_rect.y += 25;
-                    font_rect.w = 40;
-                    font_rect.h = 60;
+
+                    //字体膨胀
+                    int offset_font = amplitude_font * sin(hz * 3.14159 / times);
+
+                    font_rect.x += 32.5 - offset_font;
+                    font_rect.y += 20 - offset_font;
+                    font_rect.w = 35 + 2 * offset_font;
+                    font_rect.h = 70+ 2 * offset_font;
+
                     if (all[i][j] > 10) // 根据数字位数微调
                     {
                         font_rect.x -= 10;
@@ -1087,10 +1095,10 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
 
                     // 调整字体位置和大小
                     font_rect = rect; // 先定位到方块位置，再调整
-                    font_rect.x += 30;
-                    font_rect.y += 25;
-                    font_rect.w = 40;
-                    font_rect.h = 60;
+                font_rect.x += 32.5;
+                font_rect.y += 20;
+                font_rect.w = 35;
+                font_rect.h = 70;
                     if (all[i][j] > 10) // 根据数字位数微调
                     {
                         font_rect.x -= 10;
