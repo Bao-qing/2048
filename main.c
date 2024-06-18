@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include <math.h> 
+#include <math.h>
 #include "SDL/include/SDL2/SDL.h"
 #include "SDL/include/SDL2/SDL_image.h"
 #include "SDL/include/SDL2/SDL_ttf.h"
@@ -13,9 +13,9 @@
 void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *font, int gameover, int score);
 void add_block(int all[4][4], unsigned short pos[2]);
 int moveup(int all[4][4], int move[4][4], int used[4][4]);
-void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font,int score);
-void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score);
-void score_draw(SDL_Renderer *pRenderer,TTF_Font *font,int score);
+void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font, int score, int max_score, int scoreadd);
+void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score, int max_score);
+void score_draw(SDL_Renderer *pRenderer, TTF_Font *font, int score, int max_score);
 void transposition(int all[4][4], char direction);
 int save_score(int score);
 SDL_Color getcolor(int number);
@@ -122,8 +122,13 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     SDL_Event evt;        // 事件
     int delay_or_not = 1; // 延迟标志，用于延迟游戏结束时的动画
     int score = 0;        // 分数
+    int max_score = save_score(score);
     while (!quit)
     {
+        if (score > max_score)
+        {
+            max_score = score;
+        }
         if (SDL_PollEvent(&evt)) // 有事件，SDL_PollEvent用于取出事件
         {
             if (evt.type == SDL_QUIT) // 检测到退出事件，退出
@@ -193,7 +198,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         Mix_PlayMusic(add_wav, 0);
                     }
 
-                    animation(move, all, pRenderer, tex, evt.key.keysym.sym, font,score); // 动画
+                    animation(move, all, pRenderer, tex, evt.key.keysym.sym, font, score, max_score, score_add); // 动画
                 }
 
                 transposition(all, evt.key.keysym.sym);  // 重新转置地图，准备计算新的地图
@@ -243,9 +248,16 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         add_block(all, appear_pos1);
                         appear_pos2[0] = 5; // 标记为5，表示不用
                     }
+                    else
+                    {
+                        appear_pos1[0] = 5;
+                        appear_pos2[0] = 5;
+                    }
                 }
                 else
                 {
+                    appear_pos1[0] = 5;
+                    appear_pos2[0] = 5;
                     // 判断是否游戏结束
                     int end = 1;
 
@@ -300,20 +312,21 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     }
                 }
 
-                if (score_add)
-                { // 有合成,播放合成动画
-                    used[appear_pos1[0]][appear_pos1[1]] = 3;
-                    if (appear_pos2[0] <= 4)
-                    {
-                        used[appear_pos2[0]][appear_pos2[1]] = 3;
-                    }
-                    bubble_animation(pRenderer, used, move, all_temp, all, tex, font, score); // 膨胀动画
+                if (appear_pos2[0] <= 4)
+                {
+                    used[appear_pos2[0]][appear_pos2[1]] = 3;
                 }
-                draw(pRenderer, all, tex, font, gameover, score); // 绘图，正常绘图
+                if (appear_pos1[0] <= 4)
+                {
+                    used[appear_pos1[0]][appear_pos1[1]] = 3;
+                }
+
+                bubble_animation(pRenderer, used, move, all_temp, all, tex, font, score, max_score); // 膨胀动画
+                draw(pRenderer, all, tex, font, gameover, score);                                    // 绘图，正常绘图
             }
         }
     }
-    // 此时已经退出消息循环，游戏已经被关闭，释放资源，防止内存泄漏
+    // 此时已经退出消息循环，游戏已经被关闭，释放资源
     if (pRenderer != NULL)
     {
         SDL_DestroyRenderer(pRenderer); // 释放渲染器
@@ -457,7 +470,7 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
         }
     }
     // 绘制分数
-    score_draw(pRenderer, font, score);
+    score_draw(pRenderer, font, score, max_score);
 
     // gameover = 2; 如果win or lose 在绘制好游戏主界面后加上蒙版
     if (gameover) // 不同的gameover值，绘制不同的界面，gameover=0，正常绘制，不再添加其他界面，gameover=1，绘制游戏结束界面，gameover=2，绘制游戏胜利界面
@@ -622,7 +635,7 @@ void add_block(int all[4][4], unsigned short pos[2])
 // 函数作用：动画，移动时划过
 // 参数：move：移动矩阵，all：地图，pRenderer：渲染器，tex：背景，direction：移动方向，font：字体
 // 返回值：无
-void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font,int score)
+void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font, int score, int max_score, int scoreadd)
 {
     int move_times = 15; // 每一步，每个滑行时渲染的帧数
     int delay_time = 5;  // 每帧之间的延迟，可以控制动画速度
@@ -712,7 +725,6 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
                         font_rect.x -= 9;
                         font_rect.w += 20;
                     }
-
                     // 渲染文本
                     SDL_RenderCopy(pRenderer, texture, NULL, &font_rect);
                     SDL_FreeSurface(surface);    // 释放表面
@@ -720,16 +732,84 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
                 }
             }
         }
-        score_draw(pRenderer, font, score); // 绘制分数
+
+        // 棋盘绘制完成，绘制分数和浮动加分
+        // 浮动加分
+        if (scoreadd)
+        {
+            font_color.r = 119;
+            font_color.g = 110;
+            font_color.b = 101;
+
+            itoa(scoreadd, number, 10);
+            // 插入+号
+            /*         i = 0;
+                    char temp = '+';
+                    char temp2;
+                    while (number[i] != '\0')
+                    {
+                        temp2 = number[i];
+                        number[i] = temp;
+                        temp = number[i+1];
+                        number[i+1] = temp2;
+                        i++;
+                    }
+                    number[i+1] = '\0'; */
+
+            int scorelen = strlen(itoa(scoreadd, number, 10));
+            char temp[10];
+            strcpy(temp, "+");
+
+            strcat(temp, number);
+            strcpy(number, temp);
+
+            surface = TTF_RenderText_Blended(font, number, font_color);
+
+            // 创建纹理
+            texture = SDL_CreateTextureFromSurface(pRenderer, surface);
+            // 定位
+            font_rect.x = 350 + 10 + 108;
+            font_rect.y = 25;
+            font_rect.w = 40;
+            font_rect.h = 33;
+
+            int offset_float_score = 20 * (1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2;
+            if (scorelen == 1) // 根据数字位数微调
+            {
+                font_rect.x = 349 + 10 + 5;
+                font_rect.w = 30;
+            }
+            else if (scorelen == 2)
+            {
+                font_rect.x = 350 + 10;
+                font_rect.w = 40;
+            }
+            else if (scorelen == 3)
+            {
+                font_rect.x = 350 + 8;
+                font_rect.w = 50;
+            }
+            else
+            {
+                font_rect.x = 350 + 5;
+                font_rect.w = 50;
+            }
+
+            font_rect.y -= offset_float_score;
+            SDL_RenderCopy(pRenderer, texture, NULL, &font_rect);
+
+            SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
+        }
+
+        score_draw(pRenderer, font, score, max_score); // 绘制分数
         SDL_RenderPresent(pRenderer);
         SDL_Delay(delay_time); // 每帧之间的延迟，可以控制动画速度
     }
 }
 
-void score_draw(SDL_Renderer *pRenderer,TTF_Font *font,int score){
-    // 读取最高分
-    int max_score = save_score(score);
-    
+void score_draw(SDL_Renderer *pRenderer, TTF_Font *font, int score, int max_score)
+{
     unsigned int hz = 0;
     SDL_Texture *texture = NULL; // 纹理（用于渲染文本）
     SDL_Surface *surface = NULL; // 表面（用于渲染文本）
@@ -750,7 +830,7 @@ void score_draw(SDL_Renderer *pRenderer,TTF_Font *font,int score){
     texture_score = SDL_CreateTextureFromSurface(pRenderer, surface_score);    // 创建分数纹理
     if (scorelen == 1)                                                         // 根据数字位数微调
     {
-        font_rect.x = 349 + 10 + 8;
+        font_rect.x = 349 + 10 + 5;
         font_rect.w = 20;
     }
     else if (scorelen == 2)
@@ -815,13 +895,12 @@ void score_draw(SDL_Renderer *pRenderer,TTF_Font *font,int score){
     SDL_DestroyTexture(texture_score);
     SDL_FreeSurface(surface_max_score);
     SDL_DestroyTexture(texture_max_score);
-
 }
 
 // 函数作用：膨胀和出现动画
 // 参数：pRenderer：渲染器，used：使用矩阵，move：移动矩阵，all_temp：缓存地图，all：地图，tex：背景，font：字体，score：分数
 // 返回值：无
-void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font,int score)
+void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score, int max_score)
 {
     // 气泡动画
     //  读取最高分
@@ -1031,7 +1110,7 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                 }
             }
         }
-        score_draw(pRenderer, font, score); // 绘制分数
+        score_draw(pRenderer, font, score, max_score); // 绘制分数
         SDL_RenderPresent(pRenderer);
         SDL_Delay(delay_time); // 每帧之间的延迟，可以控制动画速度
     }
