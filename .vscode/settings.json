@@ -1,4 +1,5 @@
 {
+    "cmake.generator": "MinGW Makefiles",
     "files.associations": {
         "windows.h": "c"
     }

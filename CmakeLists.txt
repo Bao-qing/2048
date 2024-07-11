@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.10)
+project(MyProject)
+
+# 设置C标准
+set(CMAKE_C_STANDARD 99)
+
+# 添加源文件
+set(SOURCE_FILES main.c img/demo.o)
+
+# 包含头文件目录
+include_directories(${CMAKE_SOURCE_DIR}/SDL/include)
+
+# 链接库文件目录
+link_directories(${CMAKE_SOURCE_DIR}/SDL/lib)
+
+# 添加可执行文件
+add_executable(main ${SOURCE_FILES})
+
+# 链接SDL库
+target_link_libraries(main SDL2 SDL2_image SDL2_ttf SDL2_mixer)
+
+# 如果是Windows系统，添加-mwindows编译选项
+target_link_options(main PRIVATE -mwindows)
+
+# 复制DLL和资源文件
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${CMAKE_SOURCE_DIR}/SDL/bin/SDL2.dll
+    ${CMAKE_SOURCE_DIR}/SDL/bin/SDL2_image.dll
+    ${CMAKE_SOURCE_DIR}/SDL/bin/SDL2_ttf.dll
+    ${CMAKE_SOURCE_DIR}/SDL/bin/SDL2_mixer.dll
+    ${CMAKE_SOURCE_DIR}/SDL/bin/zlib1.dll
+    ${CMAKE_SOURCE_DIR}/SDL/bin/libfreetype-6.dll
+    $<TARGET_FILE_DIR:main>
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/ttf
+    $<TARGET_FILE_DIR:main>/ttf
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/img
+    $<TARGET_FILE_DIR:main>/img
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/audio
+    $<TARGET_FILE_DIR:main>/audio)
+
+# 设置编译优化等级
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
+endif()
