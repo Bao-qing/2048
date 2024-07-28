@@ -2,5 +2,32 @@
     "cmake.generator": "MinGW Makefiles",
     "files.associations": {
         "windows.h": "c"
-    }
+    },
+    "CustomizeToolbar.buttonConfig": [
+        {
+            "name": "Build",
+            "icon": {
+                "light": "builtin/Build.svg",
+                "dark": "builtin/Build.svg"
+            },
+            "command_vscode": "cmake.build"
+        },
+        {
+            "name": "Run",
+            "icon": {
+                "light": "builtin/run_dark.svg",
+                "dark": "builtin/run_dark.svg"
+            },
+            "command_vscode": "cmake.launchTarget"
+        },
+        {
+            "name": "Debug",
+            "icon": {
+                "light": "builtin/terminal_light.svg",
+                "dark": "builtin/terminal_dark.svg"
+            },
+            "command_vscode": "cmake.projectStatus.debugTarget"
+        },
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 }

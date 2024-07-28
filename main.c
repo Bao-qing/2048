@@ -4,19 +4,23 @@
 #include <time.h>
 #include <stdlib.h>
 #include <math.h>
-#include "SDL/include/SDL2/SDL.h"
-#include "SDL/include/SDL2/SDL_image.h"
-#include "SDL/include/SDL2/SDL_ttf.h"
-#include "SDL/include/SDL2/SDL_mixer.h"
+#include "SDL64/include/SDL2/SDL.h"
+#include "SDL64/include/SDL2/SDL_image.h"
+#include "SDL64/include/SDL2/SDL_ttf.h"
+#include "SDL64/include/SDL2/SDL_mixer.h"
+
+#define BLOCK_WIDTH 106.66
+#define BLOCK_HEIGHT 105.33
+
 
 // 函数声明，函数作用，参数说明等在函数定义处注释写出
 void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *font, int gameover, int score);
 void add_block(int all[4][4], unsigned short pos[2]);
 int moveup(int all[4][4], int move[4][4], int used[4][4]);
-void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font, int score, int max_score, int scoreadd);
+void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, SDL_Scancode direction, TTF_Font *font, int score, int max_score, int scoreadd);
 void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4], SDL_Texture *tex, TTF_Font *font, int score, int max_score);
 void score_draw(SDL_Renderer *pRenderer, TTF_Font *font, int score, int max_score);
-void transposition(int all[4][4], char direction);
+void transposition(int all[4][4], SDL_Scancode direction);
 int save_score(int score);
 SDL_Color getcolor(int number);
 
@@ -159,7 +163,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 {
                     continue;
                 }
-                if (evt.key.keysym.sym != 'w' && evt.key.keysym.sym != 's' && evt.key.keysym.sym != 'a' && evt.key.keysym.sym != 'd') // 按下的不是wasd，不响应
+                if (evt.key.keysym.sym != 'w' && evt.key.keysym.sym != 's' && evt.key.keysym.sym != 'a' && evt.key.keysym.sym != 'd' && evt.key.keysym.scancode != SDL_SCANCODE_RIGHT && evt.key.keysym.scancode != SDL_SCANCODE_LEFT && evt.key.keysym.scancode != SDL_SCANCODE_UP && evt.key.keysym.scancode != SDL_SCANCODE_DOWN) // 按下的不是wasd 或小键盘，不响应
                 {
                     if (evt.key.keysym.sym == 'p') // 按下p，生成一个1024，用于测试win条件，此功能被保留
                     {
@@ -172,12 +176,12 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 int score_add;        // 记录单步分数
                 int used[4][4] = {0}; // 记录每个格子是否被使用，是否产生合并，用于动画
 
-                transposition(all, evt.key.keysym.sym);  // 游戏中实际上仅有一个向上的游戏操作，其他操作都由矩阵转置实现，即将矩阵转置后，统一向上移动，再转置回来
+                transposition(all, evt.key.keysym.scancode);  // 游戏中实际上仅有一个向上的游戏操作，其他操作都由矩阵转置实现，即将矩阵转置后，统一向上移动，再转置回来
                 score_add = moveup(all, move, used);     // 向上移动，返回单步分数
                 score += score_add;                      // 加分
-                transposition(all, evt.key.keysym.sym);  // 转置回来地图
-                transposition(move, evt.key.keysym.sym); // 转置回来移动矩阵，这一步的目的是以正向的方向播放动画
-                transposition(used, evt.key.keysym.sym); // 转置使用矩阵
+                transposition(all, evt.key.keysym.scancode);  // 转置回来地图
+                transposition(move, evt.key.keysym.scancode); // 转置回来移动矩阵，这一步的目的是以正向的方向播放动画
+                transposition(used, evt.key.keysym.scancode); // 转置使用矩阵
                 // 如果没有移动，不生成新的方块，不进行动画
                 int move_flag = 0;
                 for (i = 0; i < 4; i++) // 遍历移动矩阵，判断是否有移动
@@ -198,11 +202,11 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         Mix_PlayMusic(add_wav, 0);
                     }
 
-                    animation(move, all, pRenderer, tex, evt.key.keysym.sym, font, score, max_score, score_add); // 动画
+                    animation(move, all, pRenderer, tex, evt.key.keysym.scancode, font, score, max_score, score_add); // 动画
                 }
 
-                transposition(all, evt.key.keysym.sym);  // 重新转置地图，准备计算新的地图
-                transposition(move, evt.key.keysym.sym); // 重新转置移动矩阵，准备计算新的地图
+                transposition(all, evt.key.keysym.scancode);  // 重新转置地图，准备计算新的地图
+                transposition(move, evt.key.keysym.scancode); // 重新转置移动矩阵，准备计算新的地图
 
                 // 缓存地图
                 for (i = 0; i < 4; i++)
@@ -225,8 +229,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         }
                     }
                 }
-                transposition(all, evt.key.keysym.sym);  // 计算完成，转置回来地图
-                transposition(move, evt.key.keysym.sym); // 转置回来移动矩阵，不过移动矩阵已经不再使用，所以这一步可以省略
+                transposition(all, evt.key.keysym.scancode);  // 计算完成，转置回来地图
+                transposition(move, evt.key.keysym.scancode); // 转置回来移动矩阵，不过移动矩阵已经不再使用，所以这一步可以省略
 
                 // 统计空格数，如果有空格，生成新的方块
                 int empty = 0;
@@ -430,8 +434,8 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
                 color = getcolor(all[i][j]); // 获取颜色
                 rect.x = 60 + 121 * i;       // 计算方块位置
                 rect.y = 184 + 118.5 * j;
-                rect.w = 106.66;
-                rect.h = 105.33;
+                rect.w = BLOCK_WIDTH;
+                rect.h = BLOCK_HEIGHT;
                 SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
                 SDL_RenderFillRect(pRenderer, &rect);                                  // 绘制方块
 
@@ -637,7 +641,7 @@ void add_block(int all[4][4], unsigned short pos[2])
 // 函数作用：动画，移动时划过
 // 参数：move：移动矩阵，all：地图，pRenderer：渲染器，tex：背景，direction：移动方向，font：字体
 // 返回值：无
-void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, char direction, TTF_Font *font, int score, int max_score, int scoreadd)
+void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/,SDL_Scancode direction, TTF_Font *font, int score, int max_score, int scoreadd)
 {
     int move_times = 8; // 每一步，每个滑行时渲染的帧数
     int delay_time = 8; // 每帧之间的延迟，可以控制动画速度
@@ -668,28 +672,29 @@ void animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Textu
                     color = getcolor(all[i][j]); // 获取颜色
 
                     // 位置
-                    if (direction == 'w') // 根据移动方向，计算位置
+                    if (direction == SDL_SCANCODE_W || direction == SDL_SCANCODE_UP) // 根据移动方向，计算位置
                     {
                         rect.x = 60 + 121 * i;
                         rect.y = 184 + 118.5 * j - (118.6 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2); // 计算位置
                     }
-                    else if (direction == 's')
+                    else if (direction == SDL_SCANCODE_S || direction == SDL_SCANCODE_DOWN)
                     {
                         rect.x = 60 + 121 * i;
                         rect.y = 184 + 118.5 * j + (118.6 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2);
                     }
-                    else if (direction == 'a')
+                    else if (direction == SDL_SCANCODE_A || direction == SDL_SCANCODE_LEFT)
                     {
                         rect.x = 60 + 121 * i - (121 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2);
                         rect.y = 184 + 118.5 * j;
                     }
-                    else if (direction == 'd')
+                    else if (direction == SDL_SCANCODE_D || direction == SDL_SCANCODE_RIGHT)
                     {
                         rect.x = 60 + 121 * i + (121 * (move[i][j])) * ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2);
                         rect.y = 184 + 118.5 * j;
                     }
-                    rect.w = 106.66;
-                    rect.h = 105.33;
+
+                    rect.w = BLOCK_WIDTH;
+                    rect.h = BLOCK_HEIGHT;
                     SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
                     SDL_RenderFillRect(pRenderer, &rect);                                  // 绘制方块
                     // 文字
@@ -957,8 +962,8 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                     color = getcolor(all[i][j]); // 获取颜色
                     rect.x = 60 + 121 * i;       // 计算方块位置
                     rect.y = 184 + 118.5 * j;
-                    rect.w = 106.66;
-                    rect.h = 105.33;
+                    rect.w = BLOCK_WIDTH;
+                    rect.h = BLOCK_HEIGHT;
                     SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
                     SDL_RenderFillRect(pRenderer, &rect);                                  // 绘制方块
 
@@ -1065,8 +1070,8 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
 
                     rect.x = 60 + 121 * i; // 计算方块位置
                     rect.y = 184 + 118.5 * j;
-                    rect.w = 106.66;
-                    rect.h = 105.33;
+                    rect.w = (int) BLOCK_WIDTH;
+                    rect.h = (int) BLOCK_HEIGHT;
 
                     SDL_SetRenderDrawColor(pRenderer, color.r, color.g, color.b, color.a); // 设置颜色
                     block_rect = rect;
@@ -1128,12 +1133,12 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
 // 函数作用：矩阵转置
 // 参数：all：地图，direction：移动方向
 // 返回值：无
-void transposition(int all[4][4], char direction)
+void transposition(int all[4][4], SDL_Scancode direction)
 
 {
     // 矩阵的不同转置，用于不同方向的移动
     int i, j;
-    if (direction == 's')
+    if (direction ==SDL_SCANCODE_S  || direction == SDL_SCANCODE_DOWN)
     {
         int temp;
         for (i = 0; i < 4; i++)
@@ -1146,7 +1151,7 @@ void transposition(int all[4][4], char direction)
             }
         }
     }
-    else if (direction == 'a')
+    else if (direction == SDL_SCANCODE_A || direction == SDL_SCANCODE_LEFT)
     {
         int temp;
         for (i = 0; i < 4; i++)
@@ -1162,7 +1167,7 @@ void transposition(int all[4][4], char direction)
             }
         }
     }
-    else if (direction == 'd')
+    else if (direction == SDL_SCANCODE_D || direction == SDL_SCANCODE_RIGHT)
     {
         int temp;
         for (i = 0; i < 4; i++)
