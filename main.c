@@ -1,4 +1,3 @@
-// 编译命令：gcc main.c -o main img/demo.o -ISDL/include -LSDL/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -mwindows
 #include <Windows.h>
 #include <stdio.h>
 #include <time.h>
@@ -8,27 +7,41 @@
 #include "SDL64/include/SDL2/SDL_image.h"
 #include "SDL64/include/SDL2/SDL_ttf.h"
 #include "SDL64/include/SDL2/SDL_mixer.h"
+#define PI 3.1415926
+#define SCALE 0.75                                          // 缩放比例
 
-#define WIDTH 600              // 窗口宽度
-#define HEIGHT 800             // 窗口高度
+#define WIDTH (600.0*SCALE)                                 // 窗口宽度
+#define HEIGHT (800.0*SCALE)                                // 窗口高度
 
-#define BLOCK_WIDTH 106.66      // 方块宽度
-#define BLOCK_HEIGHT 105.33     // 方块高度
+#define ORIGIN_X (60.0*SCALE)                               // 起始位置_X
+#define ORIGIN_Y (184.0*SCALE)                              // 起始位置_Y
 
-#define ORIGIN_X 60             // 起始位置_X
-#define ORIGIN_Y 184            // 起始位置_Y
+#define BLOCK_WIDTH (106.66*SCALE)                          // 方块宽度
+#define BLOCK_HEIGHT (105.33*SCALE)                         // 方块高度
+#define GAP_X (14.34*SCALE)                                 // 间隙_X
+#define GAP_Y (13.17*SCALE)                                 // 间隙_Y
+#define GAP_AND_WIDTH_X (BLOCK_WIDTH+GAP_X)                 // 方块间隔_X,包括方块宽度和间隙
+#define GAP_AND_HIGTH_Y (BLOCK_HEIGHT+GAP_Y)                // 方块间隔_Y，包括方块高度和间隙
+#define MAP_WIDTH (4*BLOCK_WIDTH+3*GAP_X)                   // 地图宽度
+#define MAP_HEIGHT (4*BLOCK_HEIGHT+3*GAP_Y)                 // 地图高度
 
-#define GAP_AND_WIDTH_X 121     // 方块间隔_X,包括方块宽度和间隙
-#define GAP_AND_HIGTH_Y 118.5   // 方块间隔_Y，包括方块高度和间隙
+#define BLOCK_FONT_OFFSET_X (0.328*BLOCK_WIDTH)             // 方块上的字体偏移_X
+#define BLOCK_FONT_OFFSET_Y (0.171*BLOCK_HEIGHT)            // 方块上的字体偏移_Y
+#define BLOCK_FONT_WIDTH (0.328*BLOCK_WIDTH)                // 方块上的字体宽度
+#define BLOCK_FONT_HEIGHT (0.665*BLOCK_HEIGHT)              // 方块上的字体高度
 
-#define BLOCK_FONT_OFFSET_X 35 // 方块上的字体偏移_X
-#define BLOCK_FONT_OFFSET_Y 18   // 方块上的字体偏移_Y
+#define SCORE_POSITION_X (0.615*WIDTH)                      // 分数位置_X
+#define SCORE_POSITION_Y (0.0475*HEIGHT)                    // 分数位置_Y
+#define SCORE_HEIGHT (0.04125 * HEIGHT)                     // 分数高度
+#define MAX_SCORE_POSITION_X (0.8*WIDTH)                    // 最高分位置_X
+#define MAX_SCORE_POSITION_Y (0.0475*HEIGHT)                // 最高分位置_Y
+#define MAX_SCORE_HEIGHT SCORE_HEIGHT                       // 最高分高度
 
-#define BLOCK_FONT_WIDTH 35     // 方块上的字体宽度
-#define BLOCK_FONT_HEIGHT 70    // 方块上的字体高度
-
-#define ADD_SCORE_FLOAT_LENTH 20 // 分数增加的浮动长度
-#define BUBBLE_ANIMATION_AMPLITUDE 15 // 膨胀动画振幅
+#define LOADANIMATION 1                                     // 是否加载动画
+#define ANIMATION_TIMES 8                                   // 动画帧数
+#define ANIMATION_DELAY 8                                   // 动画帧间延时
+#define ADD_SCORE_FLOAT_LENTH (0.03333333*WIDTH)            // 分数增加的浮动长度
+#define BUBBLE_ANIMATION_AMPLITUDE (0.025*WIDTH)            // 膨胀动画振幅
 
 
 // 函数声明，函数作用，参数说明等在函数定义处注释写出
@@ -40,7 +53,7 @@ int moveup(int all[4][4], int move[4][4], int used[4][4]);
 
 void
 animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, SDL_Scancode direction,
-          TTF_Font *font, int score, int max_score, int scoreadd);
+          TTF_Font *font, int score, int max_score, int scoreadd, uint8_t loadAnimation);
 
 void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], int all_temp[4][4], int all[4][4],
                       SDL_Texture *tex, TTF_Font *font, int score, int max_score);
@@ -159,8 +172,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 quit = 1;
             } else if (evt.type == SDL_MOUSEBUTTONDOWN) // 鼠标点击事件，只用于gameover时检测是否点击了tryagain
             {
-                SDL_Rect rect_tryagain = {60 + 121 + 60, 184 + 118.5 + 118 + 70, 106.66,
-                                          40};                                                                                                             // tryagain的位置
+                SDL_Rect rect_tryagain = {ORIGIN_X + 0.3853*MAP_WIDTH, ORIGIN_Y + 0.665*MAP_HEIGHT, BLOCK_WIDTH, 0.0867*MAP_HEIGHT};                                                                                                             // tryagain的位置
                 if (evt.button.x > rect_tryagain.x && evt.button.x < rect_tryagain.x + rect_tryagain.w &&
                     evt.button.y > rect_tryagain.y && evt.button.y < rect_tryagain.y + rect_tryagain.h &&
                     gameover) // 点击了tryagain
@@ -222,7 +234,7 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     }
 
                     animation(move, all, pRenderer, tex, evt.key.keysym.scancode, font, score, max_score,
-                              score_add); // 动画
+                              score_add, LOADANIMATION); // 动画
                 }
 
                 transposition(all, evt.key.keysym.scancode);  // 重新转置地图，准备计算新的地图
@@ -294,6 +306,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
                     if (end == 1) {
                         draw(pRenderer, all, tex, font, gameover, score); // 先绘制正常界面，再延迟后绘制游戏结束界面
+
+                        //animation(move, all, pRenderer, tex, evt.key.keysym.scancode, font, score, max_score, score_add,0); // 动画
                         gameover = 1;                                     // 设置游戏结束标志
                         if (delay_or_not)                                 // 延迟标志，用于延迟游戏结束时的动画，优化体验
                         {
@@ -312,8 +326,8 @@ INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                         if (all[i][j] == 2048) {
                             gameover = 2;
                             Mix_PlayMusic(win_wav, 0);                        // 播放游戏胜利音频
-                            draw(pRenderer, all, tex, font, gameover, score); // 绘图，以游戏胜利形式绘图
-                            continue;                                         // 游戏胜利，不再进行下面的操作，防止游戏胜利的绘图被覆盖
+                            //draw(pRenderer, all, tex, font, gameover, score); // 绘图，以游戏胜利形式绘图
+                            //continue;                                         // 游戏胜利，不再进行下面的操作，防止游戏胜利的绘图被覆盖
                         }
                     }
                 }
@@ -453,12 +467,12 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
                 font_rect.w = BLOCK_FONT_WIDTH;
                 font_rect.h = BLOCK_FONT_HEIGHT;
                 if (all[i][j] > 10) {
-                    font_rect.x -= BLOCK_WIDTH/10;
-                    font_rect.w += BLOCK_WIDTH/5;
+                    font_rect.x -= BLOCK_WIDTH / 10;
+                    font_rect.w += BLOCK_WIDTH / 5;
                 }
                 if (all[i][j] > 100) {
-                    font_rect.x -= BLOCK_WIDTH/11;
-                    font_rect.w += BLOCK_WIDTH/5;
+                    font_rect.x -= BLOCK_WIDTH / 11;
+                    font_rect.w += BLOCK_WIDTH / 5;
                 }
                 SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
             }
@@ -471,7 +485,7 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
     if (gameover) // 不同的gameover值，绘制不同的界面，gameover=0，正常绘制，不再添加其他界面，gameover=1，绘制游戏结束界面，gameover=2，绘制游戏胜利界面
     {
 
-        SDL_Rect rect_start = {60, 184, 121 * 3 + 106.66, 118.5 * 3 + 105.33}; // 游戏结束界面的位置，即游戏棋盘的位置
+        SDL_Rect rect_start = {ORIGIN_X, ORIGIN_Y, MAP_WIDTH, MAP_HEIGHT}; // 游戏结束界面的位置，即游戏棋盘的位置
 
         // 游戏结束
         if (gameover == 1) {
@@ -499,7 +513,7 @@ void draw(SDL_Renderer *pRenderer, int all[4][4], SDL_Texture *tex, TTF_Font *fo
         // 创建纹理
         SDL_Texture *tex_tryagain = SDL_CreateTextureFromSurface(pRenderer, tryagain);
         // 纹理写入渲染器
-        SDL_Rect rect_tryagain = {60 + 121 + 60, 184 + 118.5 + 118 + 70, 106.66, 40};
+        SDL_Rect rect_tryagain = {ORIGIN_X + 0.3853*MAP_WIDTH, ORIGIN_Y + 0.665*MAP_HEIGHT, BLOCK_WIDTH, 0.0867*MAP_HEIGHT}; // tryagain的位置
 
         SDL_RenderCopy(pRenderer, tex_tryagain, NULL, &rect_tryagain);
         SDL_FreeSurface(tryagain);
@@ -615,9 +629,9 @@ void add_block(int all[4][4], unsigned short pos[2]) {
 // 返回值：无
 void
 animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *tex /*背景*/, SDL_Scancode direction,
-          TTF_Font *font, int score, int max_score, int scoreadd) {
-    int move_times = 8; // 每一步，每个滑行时渲染的帧数
-    int delay_time = 8; // 每帧之间的延迟，可以控制动画速度
+          TTF_Font *font, int score, int max_score, int scoreadd, uint8_t loadAnimation) {
+    int move_times = ANIMATION_TIMES; // 每一步，每个滑行时渲染的帧数
+    int delay_time = ANIMATION_DELAY; // 每帧之间的延迟，可以控制动画速度
     // 动画效果,move为移动的格数，移动时划过
     SDL_Texture *texture = NULL;
     SDL_Surface *surface = NULL;
@@ -631,8 +645,11 @@ animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *t
     SDL_RenderCopy(pRenderer, tex, NULL, &pos); // 先绘制背景，再在背景上绘制方块和文本
     char number[6];
     int i, j;
-    int hz;                             // 帧数
-    for (hz = 0; hz < move_times; hz++) // 逐帧计算位置，逐帧输出图像
+    int hz = 0;                             // 帧数
+    if (!loadAnimation) {
+        hz = move_times;
+    }
+    for (; hz <= move_times; hz++) // 逐帧计算位置，逐帧输出图像
     {
         SDL_RenderCopy(pRenderer, tex, NULL, &pos); // 每次都要从新绘制背景，否则会有残影
         for (i = 0; i < 4; i++) {
@@ -646,21 +663,21 @@ animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *t
                     {
                         rect.x = ORIGIN_X + GAP_AND_WIDTH_X * i;
                         rect.y = ORIGIN_Y + GAP_AND_HIGTH_Y * j - (GAP_AND_HIGTH_Y * (move[i][j])) *
-                                                                  ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) /
+                                                                  ((1 + sin(PI * hz / move_times - PI / 2)) /
                                                                    2); // 计算位置
                     } else if (direction == SDL_SCANCODE_S || direction == SDL_SCANCODE_DOWN) {
                         rect.x = ORIGIN_X + GAP_AND_WIDTH_X * i;
                         rect.y = ORIGIN_Y + GAP_AND_HIGTH_Y * j + (GAP_AND_HIGTH_Y * (move[i][j])) *
-                                                                  ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) /
+                                                                  ((1 + sin(PI * hz / move_times - PI / 2)) /
                                                                    2);
                     } else if (direction == SDL_SCANCODE_A || direction == SDL_SCANCODE_LEFT) {
                         rect.x = ORIGIN_X + GAP_AND_WIDTH_X * i - (GAP_AND_WIDTH_X * (move[i][j])) *
-                                                                  ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) /
+                                                                  ((1 + sin(PI * hz / move_times - PI / 2)) /
                                                                    2);
                         rect.y = ORIGIN_Y + GAP_AND_HIGTH_Y * j;
                     } else if (direction == SDL_SCANCODE_D || direction == SDL_SCANCODE_RIGHT) {
                         rect.x = ORIGIN_X + GAP_AND_WIDTH_X * i + (GAP_AND_WIDTH_X * (move[i][j])) *
-                                                                  ((1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) /
+                                                                  ((1 + sin(PI * hz / move_times - PI / 2)) /
                                                                    2);
                         rect.y = ORIGIN_Y + GAP_AND_HIGTH_Y * j;
                     }
@@ -692,12 +709,12 @@ animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *t
                     font_rect.w = BLOCK_FONT_WIDTH;
                     font_rect.h = BLOCK_FONT_HEIGHT;
                     if (all[i][j] > 10) {
-                        font_rect.x -= BLOCK_WIDTH/10;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 10;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     if (all[i][j] > 100) {
-                        font_rect.x -= BLOCK_WIDTH/11;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 11;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     // 渲染文本
                     SDL_RenderCopy(pRenderer, texture, NULL, &font_rect);
@@ -733,7 +750,7 @@ animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *t
             //font_rect.w = 0.0666666 * WIDTH;
             font_rect.h = 0.04125 * HEIGHT;
 
-            int offset_float_score = ADD_SCORE_FLOAT_LENTH * (1 + sin(3.14159 * hz / move_times - 3.14159 / 2)) / 2;
+            int offset_float_score = ADD_SCORE_FLOAT_LENTH * (1 + sin(PI * hz / move_times - PI / 2)) / 2;
 //            if (scorelen == 1) // 根据数字位数微调
 //            {
 //                font_rect.x = 349 + 10 + 5; //364
@@ -748,8 +765,8 @@ animation(int move[4][4], int all[4][4], SDL_Renderer *pRenderer, SDL_Texture *t
 //                font_rect.x = 350 + 5;      //355
 //                font_rect.w = 50;
 //            }
-            font_rect.x = 0.6116666667 * WIDTH-3*scorelen;// 根据数字位数微调
-            font_rect.w = 0.0375 * HEIGHT +10*scorelen;
+            font_rect.x = 0.6116666667 * WIDTH - 3 * scorelen;// 根据数字位数微调
+            font_rect.w = 0.0375 * HEIGHT + 10 * scorelen;
             font_rect.y -= offset_float_score;
             SDL_RenderCopy(pRenderer, texture, NULL, &font_rect);
 
@@ -793,10 +810,10 @@ void score_draw(SDL_Renderer *pRenderer, TTF_Font *font, int score, int max_scor
         font_rect.w = 0.0833333 * WIDTH;
     }
 
-    font_rect.x = 0.6116666667 * WIDTH-3*scorelen;// 根据数字位数微调
+    font_rect.x = SCORE_POSITION_X - 0.005*WIDTH * scorelen;// 根据数字位数微调
 
-    font_rect.y = 0.0475 * HEIGHT;
-    font_rect.h = 0.04125 * HEIGHT;
+    font_rect.y = SCORE_POSITION_Y;
+    font_rect.h = SCORE_HEIGHT;
     printf("--score: %s--\n", score_str);
     SDL_RenderCopy(pRenderer, texture_score, NULL, &font_rect); // 绘制分数，将分数纹理写入渲染器
     // 渲染最高分                                                       // 渲染最高分，与渲染分数相同，不再注释
@@ -822,10 +839,10 @@ void score_draw(SDL_Renderer *pRenderer, TTF_Font *font, int score, int max_scor
         font_rect.w = 0.0833333 * WIDTH;
     }
 
-    font_rect.x = 0.6116666667 * WIDTH-3*max_scorelen + 0.18* WIDTH ;// 根据数字位数微调
+    font_rect.x = MAX_SCORE_POSITION_X - 0.005*WIDTH * max_scorelen;// 根据数字位数微调
 
-    font_rect.y = 0.0475 * HEIGHT;
-    font_rect.h = 0.04125 * HEIGHT;
+    font_rect.y = MAX_SCORE_POSITION_Y;
+    font_rect.h = MAX_SCORE_HEIGHT;
     printf("--max_score: %s--\n", max_score_str);
     SDL_RenderCopy(pRenderer, texture_max_score, NULL, &font_rect);
     // 释放
@@ -876,7 +893,7 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
         }
     }
 
-    for (hz = 0; hz < times; hz++) {
+    for (hz = 0; hz <= times; hz++) {
         SDL_RenderCopy(pRenderer, tex, NULL, &pos); // 先绘制背景，再在背景上绘制方块和文本
         for (i = 0; i < 4; i++)                     // 遍历地图，绘制方块和文本
         {
@@ -912,12 +929,12 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                     font_rect.w = BLOCK_FONT_WIDTH;
                     font_rect.h = BLOCK_FONT_HEIGHT;
                     if (all[i][j] > 10) {
-                        font_rect.x -= BLOCK_WIDTH/10;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 10;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     if (all[i][j] > 100) {
-                        font_rect.x -= BLOCK_WIDTH/11;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 11;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
                     SDL_FreeSurface(surface);                             // 释放表面
@@ -926,7 +943,10 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
 
                 if (used[i][j] == 1) // 此处产生了合并
                 {
-                    double offset = amplitude * sin(hz * 3.14159 / times); // 计算偏移量
+                    double offset = amplitude * sin(hz * PI / times); // 计算偏移量
+                    if (hz == times) { // 最后一帧，微调
+                        offset = 0;
+                    }
                     color = getcolor(all[i][j]);                          // 获取颜色
 
                     rect.x = ORIGIN_X + GAP_AND_WIDTH_X * i; // 计算方块位置
@@ -960,20 +980,24 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                     font_rect = rect; // 先定位到方块位置，再调整
 
                     //字体膨胀
-                    int offset_font = amplitude_font * sin(hz * 3.14159 / times);
-
+                    int offset_font = amplitude_font * sin(hz * PI / times);
+                    //
+                    if (hz == times) // 最后一帧，字体位置微调
+                    {
+                        offset_font = 0;
+                    }
                     font_rect.x += BLOCK_FONT_OFFSET_X - offset_font;
                     font_rect.y += BLOCK_FONT_OFFSET_Y - offset_font;
                     font_rect.w = BLOCK_FONT_WIDTH + 2 * offset_font;
                     font_rect.h = BLOCK_FONT_HEIGHT + 2 * offset_font;
 
                     if (all[i][j] > 10) {
-                        font_rect.x -= BLOCK_WIDTH/10;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 10;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     if (all[i][j] > 100) {
-                        font_rect.x -= BLOCK_WIDTH/11;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 11;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     SDL_RenderCopy(pRenderer, texture, NULL, &font_rect); // 绘制文本，将字体纹理写入渲染器
                 }
@@ -1017,12 +1041,12 @@ void bubble_animation(SDL_Renderer *pRenderer, int used[4][4], int move[4][4], i
                     font_rect.w = BLOCK_FONT_WIDTH;
                     font_rect.h = BLOCK_FONT_HEIGHT;
                     if (all[i][j] > 10) {
-                        font_rect.x -= BLOCK_WIDTH/10;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 10;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     if (all[i][j] > 100) {
-                        font_rect.x -= BLOCK_WIDTH/11;
-                        font_rect.w += BLOCK_WIDTH/5;
+                        font_rect.x -= BLOCK_WIDTH / 11;
+                        font_rect.w += BLOCK_WIDTH / 5;
                     }
                     // 动画缩放
 
