@@ -8,7 +8,7 @@ set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_COMPILER g++)
 
 # 添加源文件
-set(SOURCE_FILES main.c)
+set(SOURCE_FILES main.cpp)
 
 # 包含头文件目录
 include_directories(${CMAKE_SOURCE_DIR}/SDL64/include)
