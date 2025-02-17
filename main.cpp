@@ -429,7 +429,7 @@ public:
         SDL_SetRenderDrawColor(pRenderer, 238, 228, 218, 255);
         SDL_RenderClear(pRenderer);
 
-        SDL_Rect pos = {0, 0, WIDTH, HEIGHT};
+        SDL_Rect pos = {0, 0, (int)WIDTH, (int)HEIGHT};
 
         // 读取背景图片
         SDL_Surface *bmp = IMG_Load("img/bg.png");
@@ -498,7 +498,7 @@ public:
         SDL_Texture *texture = NULL; // 纹理（用于渲染文本）
         SDL_Surface *surface = NULL; // 表面（用于渲染文本）
         int i, j;
-        SDL_Rect pos = {0, 0, WIDTH, HEIGHT};        // 背景位置
+        SDL_Rect pos = {0, 0, (int)WIDTH, (int)HEIGHT};        // 背景位置
         SDL_Color color;                             // 颜色
         SDL_Rect rect;                               // 方块位置
         SDL_Rect font_rect;                          // 文本位置
@@ -563,7 +563,7 @@ public:
         // gameover = 2; 如果win or lose 在绘制好游戏主界面后加上蒙版
         if (gameover) // 不同的gameover值，绘制不同的界面，gameover=0，正常绘制，不再添加其他界面，gameover=1，绘制游戏结束界面，gameover=2，绘制游戏胜利界面
         {
-            SDL_Rect rect_start = {ORIGIN_X, ORIGIN_Y, MAP_WIDTH, MAP_HEIGHT}; // 游戏结束界面的位置，即游戏棋盘的位置
+            SDL_Rect rect_start = {(int)ORIGIN_X, (int)ORIGIN_Y, (int)MAP_WIDTH,(int) MAP_HEIGHT}; // 游戏结束界面的位置，即游戏棋盘的位置
 
             // 游戏结束
             if (gameover == 1)
@@ -595,7 +595,7 @@ public:
             SDL_Texture *tex_tryagain = SDL_CreateTextureFromSurface(pRenderer, tryagain);
             // 纹理写入渲染器
             SDL_Rect rect_tryagain = {
-                ORIGIN_X + 0.3853 * MAP_WIDTH, ORIGIN_Y + 0.665 * MAP_HEIGHT, BLOCK_WIDTH, 0.0867 * MAP_HEIGHT}; // tryagain的位置
+                (int)(ORIGIN_X + 0.3853 * MAP_WIDTH), (int)(ORIGIN_Y + 0.665 * MAP_HEIGHT), (int)(BLOCK_WIDTH, 0.0867 * MAP_HEIGHT)}; // tryagain的位置
 
             SDL_RenderCopy(pRenderer, tex_tryagain, NULL, &rect_tryagain);
             SDL_FreeSurface(tryagain);
@@ -620,7 +620,7 @@ public:
         SDL_Texture *texture = NULL;
         SDL_Surface *surface = NULL;
         // 位置信息：y加118.5 x加121
-        SDL_Rect pos = {0, 0, WIDTH, HEIGHT};
+        SDL_Rect pos = {0, 0, (int)WIDTH, (int)HEIGHT};
         SDL_Color color;
         SDL_Rect rect;
         SDL_Rect font_rect;
@@ -782,7 +782,7 @@ public:
         SDL_Texture *texture = NULL; // 纹理（用于渲染文本）
         SDL_Surface *surface = NULL; // 表面（用于渲染文本）
         int i, j;
-        SDL_Rect pos = {0, 0, WIDTH, HEIGHT}; // 背景位置
+        SDL_Rect pos = {0, 0, (int)WIDTH, (int)HEIGHT}; // 背景位置
         SDL_Color color;                      // 颜色
         SDL_Rect rect;                        // 方块位置
         SDL_Rect block_rect;
@@ -1166,7 +1166,7 @@ int main()
             else if (evt.type == SDL_MOUSEBUTTONDOWN) // 鼠标点击事件，只用于gameover时检测是否点击了tryagain
             {
                 SDL_Rect rect_tryagain = {
-                    ORIGIN_X + 0.3853 * MAP_WIDTH, ORIGIN_Y + 0.665 * MAP_HEIGHT, BLOCK_WIDTH, 0.0867 * MAP_HEIGHT}; // tryagain的位置
+                    (int)(ORIGIN_X + 0.3853 * MAP_WIDTH), (int)(ORIGIN_Y + 0.665 * MAP_HEIGHT), (int)BLOCK_WIDTH, (int)(0.0867 * MAP_HEIGHT)}; // tryagain的位置
                 if (evt.button.x > rect_tryagain.x && evt.button.x < rect_tryagain.x + rect_tryagain.w &&
                     evt.button.y > rect_tryagain.y && evt.button.y < rect_tryagain.y + rect_tryagain.h &&
                     gameover) // 点击了tryagain
