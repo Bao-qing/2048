@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(MyProject)
+project(2048CPP)
 
 # 设置C标准
 set(CMAKE_C_STANDARD 99)
@@ -44,6 +44,9 @@ add_custom_command(TARGET main POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/audio
     $<TARGET_FILE_DIR:main>/audio)
+
+# 如果是Windows系统，添加-mconsole编译选项
+target_link_options(main PRIVATE -mconsole)
 
 # 设置编译优化等级
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
