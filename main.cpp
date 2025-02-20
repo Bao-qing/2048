@@ -880,8 +880,8 @@ private:
     const int MAX_SCORE_POSITION_Y = 0.0475 * HEIGHT; // 最高分位置_Y
     const int MAX_SCORE_HEIGHT = SCORE_HEIGHT; // 最高分高度
 
-    const int ANIMATION_TIMES = 8; // 动画帧数
-    const int ANIMATION_DELAY = 8; // 动画帧间延时
+    const int ANIMATION_TIMES = 20; // 动画帧数
+    const int ANIMATION_DELAY = 5; // 动画帧间延时
     const int ADD_SCORE_FLOAT_LENTH = 0.03333333 * WIDTH; // 分数增加的浮动长度
     const int BUBBLE_ANIMATION_AMPLITUDE = 0.025 * WIDTH; // 膨胀动画振幅
 };
