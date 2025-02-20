@@ -1,9 +1,9 @@
 # 🎮 2048 Game in C++ with SDL2
 
-![Game Screenshot](img/screenshot.png)
+**个人的C++程序设计作业**，重写自原先的C语言版本 <br><br>
+一个基于SDL2库实现的经典2048游戏，支持图形界面、音效和流畅的动画效果✨<br><br>
+<img alt="Snipaste_2025-02-20_11-44-25" src="https://github.com/user-attachments/assets/8d02d011-07bd-47b8-ad56-ee2674feac80" />
 
-**个人的C++程序设计作业**，重写自原先的C语言版本
-一个基于SDL2库实现的经典2048游戏，支持图形界面、音效和流畅的动画效果✨
 
 ## 🚀 功能特性
 
