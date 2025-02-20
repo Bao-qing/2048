@@ -2,7 +2,11 @@
 
 **个人的C++程序设计作业**，重写自原先的C语言版本 <br><br>
 一个基于SDL2库实现的经典2048游戏，支持图形界面、音效和流畅的动画效果✨<br><br>
-<img alt="Snipaste_2025-02-20_11-44-25" src="https://github.com/user-attachments/assets/8d02d011-07bd-47b8-ad56-ee2674feac80" />
+## 🎨 动画效果展示
+
+| 界面 | 膨胀和出现动画 | 滑动动画 |
+|------|----------------|----------|
+| <img alt="Snipaste_2025-02-20_11-44-25" src="https://github.com/user-attachments/assets/8d02d011-07bd-47b8-ad56-ee2674feac80" /> | <img alt="Snipaste_2025-02-20_11-52-49" src="https://github.com/user-attachments/assets/4d86b793-5fb3-450b-9e25-bc61dc0ad71e" /> | <img alt="Snipaste_2025-02-20_11-54-04" src="https://github.com/user-attachments/assets/9349279c-fea3-4f19-bdf3-bdaf09b02ef4" /> |
 
 
 ## 🚀 功能特性
