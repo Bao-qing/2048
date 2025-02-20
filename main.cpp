@@ -853,37 +853,37 @@ private:
     const float PI = 3.1415926;
     const float SCALE = 0.7; // 缩放比例
 
-    const int WIDTH = 600.0 * SCALE; // 窗口宽度
-    const int HEIGHT = 800.0 * SCALE; // 窗口高度
+    const float WIDTH = 600.0 * SCALE; // 窗口宽度
+    const float HEIGHT = 800.0 * SCALE; // 窗口高度
 
-    const int ORIGIN_X = 60.0 * SCALE; // 起始位置_X
-    const int ORIGIN_Y = 184.0 * SCALE; // 起始位置_Y
+    const float ORIGIN_X = 60.0 * SCALE; // 起始位置_X
+    const float ORIGIN_Y = 184.0 * SCALE; // 起始位置_Y
 
-    const int BLOCK_WIDTH = 106.66 * SCALE; // 方块宽度
-    const int BLOCK_HEIGHT = 105.33 * SCALE; // 方块高度
-    const int GAP_X = 14.34 * SCALE; // 间隙_X
-    const int GAP_Y = 13.17 * SCALE; // 间隙_Y
-    const int GAP_AND_WIDTH_X = BLOCK_WIDTH + GAP_X; // 方块间隔_X,包括方块宽度和间隙
-    const int GAP_AND_HEIGTH_Y = BLOCK_HEIGHT + GAP_Y; // 方块间隔_Y，包括方块高度和间隙
-    const int MAP_WIDTH = 4 * BLOCK_WIDTH + 3 * GAP_X; // 地图宽度
-    const int MAP_HEIGHT = 4 * BLOCK_HEIGHT + 3 * GAP_Y; // 地图高度
+    const float BLOCK_WIDTH = 106.66 * SCALE; // 方块宽度
+    const float BLOCK_HEIGHT = 105.33 * SCALE; // 方块高度
+    const float GAP_X = 14.34 * SCALE; // 间隙_X
+    const float GAP_Y = 13.17 * SCALE; // 间隙_Y
+    const float GAP_AND_WIDTH_X = BLOCK_WIDTH + GAP_X; // 方块间隔_X,包括方块宽度和间隙
+    const float GAP_AND_HEIGTH_Y = BLOCK_HEIGHT + GAP_Y; // 方块间隔_Y，包括方块高度和间隙
+    const float MAP_WIDTH = 4 * BLOCK_WIDTH + 3 * GAP_X; // 地图宽度
+    const float MAP_HEIGHT = 4 * BLOCK_HEIGHT + 3 * GAP_Y; // 地图高度
 
-    const int BLOCK_FONT_OFFSET_X = 0.328 * BLOCK_WIDTH; // 方块上的字体偏移_X
-    const int BLOCK_FONT_OFFSET_Y = 0.171 * BLOCK_HEIGHT; // 方块上的字体偏移_Y
-    const int BLOCK_FONT_WIDTH = 0.328 * BLOCK_WIDTH; // 方块上的字体宽度
-    const int BLOCK_FONT_HEIGHT = 0.665 * BLOCK_HEIGHT; // 方块上的字体高度
+    const float BLOCK_FONT_OFFSET_X = 0.328 * BLOCK_WIDTH; // 方块上的字体偏移_X
+    const float BLOCK_FONT_OFFSET_Y = 0.171 * BLOCK_HEIGHT; // 方块上的字体偏移_Y
+    const float BLOCK_FONT_WIDTH = 0.328 * BLOCK_WIDTH; // 方块上的字体宽度
+    const float BLOCK_FONT_HEIGHT = 0.665 * BLOCK_HEIGHT; // 方块上的字体高度
 
-    const int SCORE_POSITION_X = 0.615 * WIDTH; // 分数位置_X
-    const int SCORE_POSITION_Y = 0.0475 * HEIGHT; // 分数位置_Y
-    const int SCORE_HEIGHT = 0.04125 * HEIGHT; // 分数高度
-    const int MAX_SCORE_POSITION_X = 0.8 * WIDTH; // 最高分位置_X
-    const int MAX_SCORE_POSITION_Y = 0.0475 * HEIGHT; // 最高分位置_Y
-    const int MAX_SCORE_HEIGHT = SCORE_HEIGHT; // 最高分高度
+    const float SCORE_POSITION_X = 0.615 * WIDTH; // 分数位置_X
+    const float SCORE_POSITION_Y = 0.0475 * HEIGHT; // 分数位置_Y
+    const float SCORE_HEIGHT = 0.04125 * HEIGHT; // 分数高度
+    const float MAX_SCORE_POSITION_X = 0.8 * WIDTH; // 最高分位置_X
+    const float MAX_SCORE_POSITION_Y = 0.0475 * HEIGHT; // 最高分位置_Y
+    const float MAX_SCORE_HEIGHT = SCORE_HEIGHT; // 最高分高度
 
     const int ANIMATION_TIMES = 20; // 动画帧数
     const int ANIMATION_DELAY = 5; // 动画帧间延时
-    const int ADD_SCORE_FLOAT_LENTH = 0.03333333 * WIDTH; // 分数增加的浮动长度
-    const int BUBBLE_ANIMATION_AMPLITUDE = 0.025 * WIDTH; // 膨胀动画振幅
+    const float ADD_SCORE_FLOAT_LENTH = 0.03333333 * WIDTH; // 分数增加的浮动长度
+    const float BUBBLE_ANIMATION_AMPLITUDE = 0.025 * WIDTH; // 膨胀动画振幅
 };
 
 class InputManager {
